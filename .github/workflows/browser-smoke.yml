@@ -31,5 +31,7 @@ jobs:
         if: always()
         with:
           name: a320-browser-screenshot
-          path: a320-browser-smoke.png
+          path: |
+            a320-browser-smoke.png
+            a320-mobile-portrait.png
           if-no-files-found: ignore
