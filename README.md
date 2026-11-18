@@ -42,6 +42,20 @@
 
 這些測試不代表模型已完成下載、3D 互動或實機效能驗收。
 
+## 未合併草稿的公開驗收
+
+GitHub Pages 需要在倉庫 Settings → Pages 由管理者開啟。由於 PR #1 在 Draft 階段，**不應直接合併到 main 來測試**。
+
+管理者可選 **Source: Deploy from a branch**，Branch: **feature/a320-open-source-cockpit-zh-manual**，Folder: **/(root)**，儲存後先以 https://waydefu.github.io/Airplane-cockpit/ 驗收：
+
+1. 進站先讀繁中說明，按進入；
+2. 網頁實際載入本倉庫 GPL-2.0 GLB；
+3. 機長席及頂板可切換視角並點擊控制器；
+4. 透過底部抽屜接通 BAT、EXT PWR，操作 FCU；
+5. 在 393 × 873 手機直向確認控制面板預設隱藏；再測實機觸控與 FPS。
+
+驗收完成、PR 合併至 main 後再把 Pages Source 改為 GitHub Actions（本倉庫已提供 pages.yml），由 main 部署正式版本。**GitHub Pages 回傳 404 時不得宣稱已公開交付。**
+
 ## GitHub Pages
 
 合併功能分支後，從 GitHub Settings → Pages 將 Source 設為 GitHub Actions。已提供網站部署工作流程，正式網址仍以成功部署後顯示為準。
