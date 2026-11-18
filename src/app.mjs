@@ -74,6 +74,43 @@ function getName(o){
   }
   return o.name||"未命名部件";
 }
+// FlightGear GLB retains subparts such as BatteryBtn11F and APUStartBtn2O.
+// Resolve those to their parent controller without copying third-party application code.
+const keysByLength=Object.keys(CONTROL_LABELS).sort((a,b)=>b.length-a.length);
+function findControl(raw){
+  if(CONTROL_LABELS[raw])return raw;
+  for(const name of keysByLength){
+    const suffix=raw.slice(name.length);
+    if(raw.startsWith(name)&&suffix&&/^[A-Za-z0-9]{1,3}$/.test(suffix))return name;
+  }
+  return null;
+}
+async function addHitTargets(model){
+  // Licensed model's own manifest supplies coordinates; UI hitboxes are original code.
+  const manifestPaths=[
+    "./public/assets/a320/cockpit-manifest.json",
+    "https://raw.githubusercontent.com/radebit/flight-simulator/"+upstreamCommit+"/public/models/a320/cockpit-manifest.json"
+  ];
+  let parts=[];
+  for(const path of manifestPaths){
+    try{const response=await fetch(path);if(!response.ok)continue;
+      const json=await response.json();
+      if(Array.isArray(json.parts)){parts=json.parts;break;}
+    }catch(err){console.debug("Manifest source unavailable",path,err);}
+  }
+  if(!parts.length)return;
+  const material=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,colorWrite:false});
+  for(const id of keysByLength){
+    const entry=parts.find(part=>part.name===id);
+    if(!entry||!Array.isArray(entry.min)||!Array.isArray(entry.max))continue;
+    const center=entry.min.map((v,i)=>(v+entry.max[i])/2);
+    const size=entry.min.map((v,i)=>Math.max(entry.max[i]-v,0.022));
+    const mesh=new THREE.Mesh(new THREE.BoxGeometry(...size),material);
+    mesh.position.set(...center);
+    mesh.name="hitbox:"+id;mesh.userData.sourceName=id;
+    model.add(mesh);
+  }
+}
 function makeDisplay(kind){
   const canvas=document.createElement("canvas");canvas.width=512;canvas.height=512;
   const texture=new THREE.CanvasTexture(canvas);
@@ -167,9 +204,12 @@ function createViewer(){
     const hits=raycaster.intersectObject(model,true);
     if(!hits.length)return;
     let selected=null,raw="";
+    const nearest=hits[0].distance;
     for(const hit of hits){
+      if(hit.distance-nearest>0.09)break;
       raw=getName(hit.object);
-      if(CONTROL_LABELS[raw]){selected=raw;break;}
+      const found=findControl(raw);
+      if(found){selected=found;break;}
     }
     if(selected)act(selected,e.shiftKey?-1:1);
     else qs("targetInfo").textContent=raw+" · 此部件僅供檢視（尚未接入控制功能）";
@@ -210,6 +250,7 @@ function createViewer(){
         o.material.map.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),4);
       }
     });
+    await addHitTargets(model);
     scene.add(model);setView("captain");updateDisplays();
     status("A320 駕駛艙載入完成 · 可點擊控制器，或由右側面板操作");
   }
