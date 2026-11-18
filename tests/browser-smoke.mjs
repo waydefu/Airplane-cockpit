@@ -51,6 +51,9 @@ try{
   await desktop.locator("#enterButton").click();
   assert.equal(await phase(desktop),"ready");
   await desktop.screenshot({path:"a320-browser-smoke.png",fullPage:true});
+  // Important: stop the desktop 3D render loop before emulating mobile touch.
+  // Keeping both software-rendered GLB scenes alive can starve Chromium's touch dispatcher.
+  await desktop.close();
 
   // A genuine mobile viewport with touch, not simply resizing the desktop page.
   const mobileContext=await browser.newContext({
