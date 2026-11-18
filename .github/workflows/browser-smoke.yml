@@ -1,7 +1,5 @@
 name: Browser 3D smoke test
 on:
-  push:
-    branches: ['feature/**']
   pull_request:
 permissions:
   contents: read
