@@ -8,7 +8,22 @@ const qs=id=>document.getElementById(id);
 let state=initialState(),viewer=null,started=false;
 const upstreamCommit="b2afd173081aea5db00031baa1003aa7c46a789a";
 const models=["./public/assets/a320/cockpit.glb","https://raw.githubusercontent.com/radebit/flight-simulator/"+upstreamCommit+"/public/models/a320/cockpit.glb"];
-function status(message,error=false){let el=qs("loadStatus");el.textContent=message;el.classList.toggle("error",error);}
+// Loading is a durable state. UI interactions must never overwrite it.
+function loadState(phase,message){
+  const el=qs("loadStatus");
+  el.dataset.phase=phase;
+  el.textContent=message;
+  el.classList.toggle("error",phase==="error");
+}
+function notify(message){qs("targetInfo").textContent=message;}
+function setPanelVisible(visible){
+  qs("sidePanel").classList.toggle("is-hidden",!visible);
+  qs("sideToggle").setAttribute("aria-expanded",String(visible));
+  qs("sideToggle").textContent=visible?"收起控制面板":"開啟控制面板";
+}
+const mobileQuery=matchMedia("(max-width:760px)");
+setPanelVisible(!mobileQuery.matches);
+mobileQuery.addEventListener("change",e=>setPanelVisible(!e.matches));
 function refresh(){
   const r=readouts(state);
   const data={
@@ -23,13 +38,13 @@ function refresh(){
 }
 function act(name,dir=1){
   const feedback=operate(state,name,dir);
-  qs("targetInfo").textContent=(CONTROL_LABELS[name]||name)+" · "+feedback;
-  status(feedback);refresh();
+  notify((CONTROL_LABELS[name]||name)+" · "+feedback);
+  refresh();
 }
 function openManual(){qs("manualModal").hidden=false;qs("enterButton").focus();}
 function closeManual(){
   qs("manualModal").hidden=true;
-  if(!started){started=true;status("正在初始化 3D 引擎…");begin();}
+  if(!started){started=true;loadState("loading","正在初始化 3D 引擎…");begin();}
   else qs("manualButton").focus();
 }
 qs("manualButton").addEventListener("click",openManual);
@@ -37,20 +52,20 @@ qs("enterButton").addEventListener("click",closeManual);
 qs("aboutButton").addEventListener("click",()=>{qs("aboutModal").hidden=false;qs("closeAbout").focus();});
 qs("closeAbout").addEventListener("click",()=>{qs("aboutModal").hidden=true;qs("aboutButton").focus();});
 qs("sideToggle").addEventListener("click",()=>{
-  let hidden=qs("sidePanel").classList.toggle("is-hidden");
-  qs("sideToggle").setAttribute("aria-expanded",String(!hidden));
+  setPanelVisible(qs("sidePanel").classList.contains("is-hidden"));
 });
 qs("resetButton").addEventListener("click",()=>{
-  state=initialState();status("Cold & Dark 已重設");refresh();
+  state=initialState();notify("Cold & Dark 已重設");refresh();
 });
 document.querySelectorAll("[data-control]").forEach(b=>b.addEventListener("click",()=>act(b.dataset.control)));
 document.querySelectorAll("[data-adjust]").forEach(b=>b.addEventListener("click",()=>{
   const message=adjustFcu(state,b.dataset.adjust,Number(b.dataset.delta));
-  status(message);state.last=message;refresh();
+  notify("FCU · "+message);state.last=message;refresh();
 }));
 document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>{
   document.querySelectorAll("[data-view]").forEach(el=>el.classList.toggle("is-current",el===b));
   if(viewer)viewer.setView(b.dataset.view);
+  if(mobileQuery.matches)setPanelVisible(false);
 }));
 document.addEventListener("keydown",e=>{
   if(e.key==="Escape"&&!qs("aboutModal").hidden)qs("closeAbout").click();
@@ -227,14 +242,14 @@ function createViewer(){
       return await new Promise((resolve,reject)=>{
         loader.load(url,resolve,event=>{
           const mb=(event.loaded/1048576).toFixed(1);
-          status("正在下載駕駛艙："+mb+" MB"+(event.total?" / "+(event.total/1048576).toFixed(1)+" MB":""));
+          loadState("loading","正在下載駕駛艙："+mb+" MB"+(event.total?" / "+(event.total/1048576).toFixed(1)+" MB":""));
         },reject);
       });
     }
     let gltf;
     try{gltf=await download(models[0]);}
     catch(err){
-      status("本機模型尚未就緒，改用上游 GPL-2.0 模型備援…");
+      loadState("loading","本機模型尚未就緒，改用上游 GPL-2.0 模型備援…");
       try{gltf=await download(models[1]);}
       catch(remote){console.error("Both model sources failed",err,remote);throw new Error("3D 模型無法下載，請確認網路、來源及 GLB 匯入狀態。");}
     }
@@ -252,7 +267,7 @@ function createViewer(){
     });
     await addHitTargets(model);
     scene.add(model);setView("captain");updateDisplays();
-    status("A320 駕駛艙載入完成 · 可點擊控制器，或由右側面板操作");
+    loadState("ready","A320 駕駛艙載入完成 · 可點擊控制器，或開啟控制面板操作");
   }
   return {load,setView,updateDisplays};
 }
@@ -261,12 +276,12 @@ async function begin(){
     if(!window.WebGLRenderingContext)throw new Error("瀏覽器不支援 WebGL");
     viewer=createViewer();await viewer.load();refresh();
   }catch(e){
-    status("無法進入 3D 模式："+e.message,true);
+    loadState("error","無法進入 3D 模式："+e.message);
     qs("targetInfo").textContent="仍可使用右側控制面板及繁體中文說明書。";
   }
 }
 setInterval(()=>{
-  if(advance(state,1)){refresh();status(state.last);}
+  if(advance(state,1)){refresh();notify(state.last);}
   else if(state.apuStarting)refresh();
 },1000);
 refresh();
