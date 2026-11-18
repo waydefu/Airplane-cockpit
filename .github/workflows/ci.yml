@@ -1,0 +1,35 @@
+name: Source and license checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check JavaScript syntax and ground-system behavior
+        run: |
+          node --check src/app.mjs
+          node --check src/sim.mjs
+          node --test tests/sim.test.mjs
+      - name: Check manual, attribution, and paired model source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s LICENSE
+          test -s docs/MANUAL.zh-TW.md
+          test -s docs/LICENSE-REVIEW.zh-TW.md
+          grep -q 'id="manualModal"' index.html
+          grep -q 'id="enterButton"' index.html
+          if [[ -f public/assets/a320/cockpit.glb ]]; then
+            test -s public/assets/a320/flightgear-source.tar.gz
+            test -s public/assets/a320/NOTICE.txt
+            test -s public/assets/a320/LICENSE.txt
+            test "$(git hash-object public/assets/a320/cockpit.glb)" = "b9f584c21f00fba72e31aeb08a2a521fd44c14a7"
+            test "$(git hash-object public/assets/a320/flightgear-source.tar.gz)" = "d327b3b21c7d6ccbe7f50bf3fcf292f1d897260a"
+          else
+            echo "::warning::Pinned GPLv2 cockpit binary not yet imported; site will use pinned upstream fallback."
+          fi

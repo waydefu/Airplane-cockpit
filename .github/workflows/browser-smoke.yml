@@ -1,0 +1,35 @@
+name: Browser 3D smoke test
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Confirm model and source are present
+        run: |
+          test -s public/assets/a320/cockpit.glb
+          test -s public/assets/a320/flightgear-source.tar.gz
+      - name: Install browser automation
+        run: npm install --no-save --no-package-lock playwright@1.57.0
+      - name: Start static file server
+        run: |
+          python3 -m http.server 8000 --bind 127.0.0.1 > /tmp/a320-http.log 2>&1 &
+          sleep 2
+          curl --fail http://127.0.0.1:8000/index.html >/dev/null
+      - name: Smoke test entry manual, power controls, and WebGL model
+        run: node tests/browser-smoke.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: a320-browser-screenshot
+          path: |
+            a320-browser-smoke.png
+            a320-mobile-portrait.png
+          if-no-files-found: ignore
