@@ -54,10 +54,17 @@ try{
 
   // A genuine mobile viewport with touch, not simply resizing the desktop page.
   const mobileContext=await browser.newContext({
-    viewport:{width:393,height:873},deviceScaleFactor:2,isMobile:true,hasTouch:true
+    viewport:{width:393,height:873},deviceScaleFactor:1,isMobile:true,hasTouch:true
   });
   const mobile=await mobileContext.newPage();
   mobile.on("pageerror",error=>errors.push("mobile: "+error.message));
+  // Hold GLB while testing touch UI; browser software-rendering must not starve actions.
+  let allowMobileModel;
+  const mobileModelGate=new Promise(resolve=>{allowMobileModel=resolve;});
+  await mobile.route("**/public/assets/a320/cockpit.glb",async route=>{
+    await mobileModelGate;
+    await route.continue();
+  });
   await mobile.goto(url,{waitUntil:"domcontentloaded",timeout:30000});
   await mobile.waitForFunction(()=>document.querySelector("#sideToggle")?.getAttribute("aria-expanded")==="false");
   assert.equal(await mobile.locator("#manualModal").isVisible(),true);
@@ -68,6 +75,9 @@ try{
     return {id:e?.id,tag:e?.tagName};
   });
   assert.equal(centerHit.id,"world","3D canvas center blocked on portrait mobile");
+  const toggleRect=await mobile.locator("#sideToggle").boundingBox();
+  assert.ok(toggleRect&&toggleRect.x>=0&&toggleRect.x+toggleRect.width<=393,
+    "mobile panel toggle must fit inside the viewport");
   await mobile.locator("#sideToggle").tap();
   assert.equal(await mobile.locator("#sidePanel").isVisible(),true);
   const panelBox=await mobile.locator("#sidePanel").boundingBox();
@@ -78,6 +88,8 @@ try{
   assert.equal(await mobile.locator("#headingReadout").textContent(),"001");
   await mobile.locator('[data-view="overhead"]').tap();
   assert.equal(await mobile.locator("#sidePanel").isVisible(),false,"Mobile viewpoint change must close drawer");
+  assert.equal(await phase(mobile),"loading","interaction must not overwrite in-flight model status");
+  allowMobileModel();
   await expectReady(mobile);
   assert.equal(await phase(mobile),"ready");
   await mobile.screenshot({path:"a320-mobile-portrait.png",fullPage:true});
