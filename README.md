@@ -14,7 +14,7 @@
 
 ## 已規劃功能
 
-- FlightGear 衍生的 GPL-2.0 A320neo 駕駛艙模型，六種鏡頭預設與自由視角。
+- FlightGear 衍生的 GPL-2.0 A320neo 駕駛艙模型，九種鏡頭預設（含電力、APU、FCU 近景）與自由視角。
 - 可選取部分 3D 控制器；右側面板提供 BAT、EXT PWR、APU、FCU 的獨立簡化示意操作。
 - PFD、ND、ECAM、MCDU 若能正確識別顯示器網格，會映射到簡化的動態螢幕；並非完整航電。
 - 支援手機觸控、桌面滑鼠與 WebGL 渲染；尚未完成裝置效能測試。
@@ -22,7 +22,7 @@
 
 ## 模型資產
 
-優先使用本專案 public/assets/a320/cockpit.glb。功能分支包含 GitHub Actions 資產匯入流程，下載固定上游版本並逐檔驗證 Git blob 雜湊，連同對應來源檔、GPL 授權全文及修改聲明提交。若尚未匯入完成，網頁會使用固定上游 commit 的已標示 GPL-2.0 模型資產備援。
+優先使用本專案 public/assets/a320/cockpit.glb。功能分支包含 GitHub Actions 資產匯入流程，下載固定上游版本並逐檔驗證 Git blob 雜湊，連同對應來源檔、GPL 授權全文及修改聲明提交。正式網站僅使用本地經校驗資產，不使用外部模型備援；資產缺失會阻止 CI／部署。
 
 上游：
 

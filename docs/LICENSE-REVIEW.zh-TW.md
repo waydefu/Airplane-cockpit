@@ -21,7 +21,7 @@
 - GLB 轉換檔及署名記錄：https://github.com/radebit/flight-simulator/tree/b2afd173081aea5db00031baa1003aa7c46a789a/public/models/a320
 - 上游第三方聲明：https://github.com/radebit/flight-simulator/blob/b2afd173081aea5db00031baa1003aa7c46a789a/THIRD_PARTY_NOTICES.md
 
-## 待匯入模型檔案及 Git blob SHA 校驗值
+## 已匯入模型檔案及 Git blob SHA 校驗值
 
 | 檔案 | 預期 Git blob SHA-1 |
 | --- | --- |
@@ -35,7 +35,7 @@ GitHub Actions 下載後先以 git hash-object 逐項比對，再提交到功能
 
 ## 風險與限制
 
-- 目前沒有在本執行環境直接取得及檢驗大型二進位模型，必須進一步確認 Actions 匯入成功。
+- 2026-11-18 資產匯入 Actions 成功。所有五項資產的校驗已納入 CI 及正式部署；本地資產缺失禁止發布，不再回退到外部模型。原始來源包的重建驗證由既有驗收報告提供，並非本次重新執行。
 - 現成模型的個別材質、原始作者來源與版權聲明應在匯入後再次人工審查。
 - 尚未驗證真實手機效能、模型節點、螢幕 UV 座標與完整互動一致性。
 - GPLv2 下模型與原始資料的相同位置可取得性非常重要；不能只提供未經核對的上游主分支連結。

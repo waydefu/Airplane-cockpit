@@ -20,7 +20,40 @@ async function expectReady(page){
   assert.equal(p,"ready",message);
   assert.ok((await page.locator("#world").evaluate(el=>el.width))>0,"3D canvas buffer missing");
 }
+async function modelPoint(page,view,id){
+  return await page.evaluate(async ({view,id})=>{
+    const THREE=await import("three");
+    const {views}=await import(new URL("./src/views.mjs",document.baseURI).href);
+    const manifest=await (await fetch("./public/assets/a320/cockpit-manifest.json")).json();
+    const entry=manifest.parts.find(p=>p.name===id);
+    if(!entry)throw Error("missing control "+id);
+    const v=views[view],rect=document.querySelector("#world").getBoundingClientRect();
+    const camera=new THREE.PerspectiveCamera(v.f,rect.width/rect.height,.015,150);
+    camera.position.set(...v.p);camera.lookAt(...v.t);camera.updateMatrixWorld(true);
+    const center=new THREE.Vector3(...entry.min.map((x,i)=>(x+entry.max[i])/2)).project(camera);
+    const x=rect.left+(center.x+1)*rect.width/2,y=rect.top+(1-center.y)*rect.height/2;
+    return {x,y,hit:document.elementFromPoint(x,y)?.id};
+  },{view,id});
+}
+async function cockpitClick(page,view,id,touch=false){
+  const p=await modelPoint(page,view,id);
+  assert.equal(p.hit,"world",id+" projected point is obscured at "+JSON.stringify(p));
+  if(touch)await page.touchscreen.tap(p.x,p.y);
+  else await page.mouse.click(p.x,p.y);
+  console.log("3D pick",id,p,await page.locator("#targetInfo").textContent());
+}
 try{
+  // CDN failure must not prevent manual dismissal or fallback controls.
+  const blocked=await browser.newPage({viewport:{width:1280,height:800}});
+  await blocked.route("https://cdn.jsdelivr.net/**",route=>route.abort());
+  await blocked.goto(url,{waitUntil:"domcontentloaded"});
+  await blocked.locator("#enterButton").click();
+  await blocked.waitForFunction(()=>document.querySelector("#loadStatus")?.dataset.phase==="error");
+  assert.equal(await blocked.locator("#manualModal").isVisible(),false);
+  assert.equal(await blocked.locator("#retryButton").isVisible(),true);
+  await blocked.locator('[data-control="ExtPwrBtn"]').click();
+  assert.equal(await blocked.locator("#powerReadout").textContent(),"AC POWER");
+  await blocked.close();
   // Deliberately slow down GLB download to reproduce interaction/loading race.
   const desktop=await browser.newPage({viewport:{width:1280,height:800},deviceScaleFactor:1});
   desktop.on("pageerror",error=>errors.push("desktop: "+error.message));
@@ -50,6 +83,19 @@ try{
   assert.equal(await desktop.locator("#manualModal").isVisible(),true);
   await desktop.locator("#enterButton").click();
   assert.equal(await phase(desktop),"ready");
+  // Real mesh/raycast path, not just duplicate HTML buttons.
+  await desktop.locator("#resetButton").click();
+  await desktop.locator("#sideToggle").click();
+  await desktop.locator('[data-view="power"]').click();
+  await cockpitClick(desktop,"power","BatteryBtn1");
+  assert.equal(await desktop.locator("#bat1Readout").textContent(),"AUTO");
+  await cockpitClick(desktop,"power","BatteryBtn2");
+  assert.equal(await desktop.locator("#bat2Readout").textContent(),"AUTO");
+  await cockpitClick(desktop,"power","ExtPwrBtn");
+  assert.equal(await desktop.locator("#powerReadout").textContent(),"AC POWER");
+  await desktop.locator('[data-view="fcu"]').click();
+  await cockpitClick(desktop,"fcu","hdg_sel");
+  assert.equal(await desktop.locator("#headingReadout").textContent(),"001");
   await desktop.screenshot({path:"a320-browser-smoke.png",fullPage:true});
   // Important: stop the desktop 3D render loop before emulating mobile touch.
   // Keeping both software-rendered GLB scenes alive can starve Chromium's touch dispatcher.
@@ -95,6 +141,12 @@ try{
   allowMobileModel();
   await expectReady(mobile);
   assert.equal(await phase(mobile),"ready");
+  await mobile.locator('[data-view="power"]').tap();
+  await cockpitClick(mobile,"power","BatteryBtn2",true);
+  assert.equal(await mobile.locator("#bat2Readout").textContent(),"AUTO","post-load mobile 3D BAT2 tap");
+  await mobile.locator('[data-view="fcu"]').tap();
+  await cockpitClick(mobile,"fcu","hdg_sel",true);
+  assert.equal(await mobile.locator("#headingReadout").textContent(),"002","post-load mobile 3D FCU tap");
   await mobile.screenshot({path:"a320-mobile-portrait.png",fullPage:true});
   await mobileContext.close();
   assert.deepEqual(errors,[],"browser page errors");
