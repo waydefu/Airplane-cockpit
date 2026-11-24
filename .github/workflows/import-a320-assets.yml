@@ -10,7 +10,7 @@ permissions:
   contents: write
 jobs:
   import-model:
-    if: github.repository == 'waydefu/Airplane-cockpit'
+    if: github.repository == 'waydefu/Airplane-cockpit' && github.ref == 'refs/heads/feature/a320-open-source-cockpit-zh-manual'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

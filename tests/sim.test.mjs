@@ -72,3 +72,13 @@ test("ADIRS requires AC power",()=>{
   operate(s,"ExtPwrBtn");
   operate(s,"IR1ModeKnb");assert.equal(s.ir[0],true);
 });
+
+test("loss of DC aborts pending APU startup",()=>{
+ const s=initialState();operate(s,"BatteryBtn1");operate(s,"APUMasterBtn");operate(s,"APUStartBtn");advance(s,4);operate(s,"BatteryBtn1");assert.equal(s.apuStarting,false);assert.equal(s.apuSeconds,0);operate(s,"BatteryBtn1");advance(s,8);assert.equal(s.apuAvailable,false);
+});
+test("loss of AC clears powered FD and ADIRS flags",()=>{
+ const s=initialState();assert.match(operate(s,"fd1"),/供電/);operate(s,"ExtPwrBtn");operate(s,"fd1");operate(s,"IR1ModeKnb");operate(s,"ExtPwrBtn");assert.deepEqual(s.fd,[false,false]);assert.deepEqual(s.ir,[false,false,false]);assert.equal(readouts(s).ir,"OFF");
+});
+test("FCU rejects nonfinite or fractional inputs and wraps arbitrary integer headings",()=>{
+ const s=initialState();operate(s,"ExtPwrBtn");for(const x of [NaN,Infinity,0.5,"5"])assert.match(adjustFcu(s,"heading",x),/無效/);adjustFcu(s,"heading",-7201);assert.equal(s.heading,359);
+});

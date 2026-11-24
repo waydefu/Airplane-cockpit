@@ -12,6 +12,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   publish:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -19,8 +20,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate application
         run: |
-          node --check src/sim.mjs
-          node --check src/app.mjs
+          for file in src/*.mjs; do node --check "$file"; done
+          bash scripts/verify-assets.sh
           node --test tests/sim.test.mjs
           test -s public/assets/a320/cockpit.glb
           test -s public/assets/a320/flightgear-source.tar.gz
