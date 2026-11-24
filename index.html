@@ -25,6 +25,7 @@
       <div class="reticle" aria-hidden="true"><span></span><span></span></div>
       <div class="viewport-label"><b>3D FLIGHT DECK</b><span>A320neo · GROUND TRAINING</span></div>
       <div id="loadStatus" data-phase="idle" class="load-status" role="status">請先閱讀操作說明</div>
+      <button id="retryButton" class="retry-button" type="button" hidden>重試 3D 載入</button>
       <div id="targetInfo" class="target-info" aria-live="polite">選取駕駛艙控制器，即可查看並操作。</div>
     </div>
 
@@ -46,6 +47,9 @@
       <button type="button" data-view="captain" class="is-current">機長席</button>
       <button type="button" data-view="main">主儀表</button>
       <button type="button" data-view="overhead">頂部面板</button>
+      <button type="button" data-view="power">電力近景</button>
+      <button type="button" data-view="apu">APU 近景</button>
+      <button type="button" data-view="fcu">FCU 近景</button>
       <button type="button" data-view="pedestal">中央操縱台</button>
       <button type="button" data-view="mcdu">MCDU</button>
       <button type="button" data-view="overview">全景</button>
@@ -65,6 +69,10 @@
         <button type="button" data-control="APUMasterBtn">APU MASTER <small id="apuMasterReadout">OFF</small></button>
         <button type="button" data-control="APUStartBtn">APU START <small id="apuStartReadout">OFF</small></button>
         <button type="button" data-control="APUGenBtn">APU GEN <small id="apuGenReadout">ON</small></button>
+        <button type="button" data-control="APUBleedBtn">APU BLEED</button>
+        <button type="button" data-control="IR1ModeKnb">ADIRS 1</button>
+        <button type="button" data-control="IR2ModeKnb">ADIRS 2</button>
+        <button type="button" data-control="IR3ModeKnb">ADIRS 3</button>
       </div>
       <div class="section-label">FCU / 選定值（示意）</div>
       <div class="fcu">
@@ -72,6 +80,7 @@
         <div class="fcu-row"><span>HDG</span><button type="button" data-adjust="heading" data-delta="-1" aria-label="航向減少">−</button><output id="headingReadout">000</output><button type="button" data-adjust="heading" data-delta="1" aria-label="航向增加">+</button></div>
         <div class="fcu-row"><span>ALT</span><button type="button" data-adjust="altitude" data-delta="-1000" aria-label="高度減少">−</button><output id="altitudeReadout">01000</output><button type="button" data-adjust="altitude" data-delta="1000" aria-label="高度增加">+</button></div>
       </div>
+      <div class="section-label">渲染診斷（最近一幀）</div><output id="diagnostics">尚未載入模型</output>
       <div class="side-hint">本頁只模擬部分控制器與電力狀態；不提供完整飛行導引、真實飛行性能或飛行訓練認證。</div>
       <button id="resetButton" class="subtle-button" type="button">重設 Cold &amp; Dark</button>
     </aside>
@@ -104,7 +113,7 @@
     <div class="modal-panel legal-panel">
       <span class="eyebrow">SOURCE / LICENSE</span><h2 id="aboutTitle">開源授權與使用聲明</h2>
       <p>駕駛艙幾何及材質來源：<a href="https://github.com/legoboyvdlp/A320-family" target="_blank" rel="noopener noreferrer">FlightGear A320-family</a>。使用 GPL-2.0 模型的轉換版本，其來源與轉換說明來自 <a href="https://github.com/radebit/flight-simulator" target="_blank" rel="noopener noreferrer">radebit/flight-simulator</a> 所標示的 GPL-2.0 資產。未複製該專案無授權聲明的網站程式碼。</p>
-      <p>模型來源、修改聲明與完整對應原始資料必須隨模型同時提供。若來源模型尚未成功匯入，本網站會告知並提供失敗原因；任何外部載入均保留來源連結。</p>
+      <p>模型來源、修改聲明與完整對應原始資料必須隨模型同時提供。若來源模型尚未成功匯入，本網站會告知並提供失敗原因；正式版本只從本站載入經校驗的模型；若來源不完整，禁止發布。</p>
       <p>本專案並非 Airbus、FlightGear 或 FlyByWire 官方產品，也非經認證的飛行訓練設備。</p>
       <div class="legal-links"><a href="./LICENSE" target="_blank" rel="noopener noreferrer">GPL-2.0 授權全文</a><a href="./public/assets/a320/NOTICE.txt" target="_blank" rel="noopener noreferrer">模型署名與修改紀錄</a><a href="./public/assets/a320/flightgear-source.tar.gz" target="_blank" rel="noopener noreferrer">對應原始資料</a></div>
       <button id="closeAbout" class="launch-button" type="button">返回駕駛艙</button>

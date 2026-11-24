@@ -5,3 +5,6 @@
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
 /* Mobile: keep the 3D panel fully usable until the pilot explicitly opens the controls. */
 @media(max-width:760px){.side-panel.is-hidden{display:none}.top-button{white-space:nowrap}.side-panel .side-heading{position:sticky;top:-20px;background:#08171d;z-index:1;padding-top:8px}}
+
+.load-status,.target-info{pointer-events:none}.retry-button{position:absolute;left:12px;bottom:135px;z-index:4;background:#10262c;color:var(--text);border:1px solid var(--aqua);padding:12px;border-radius:5px}.retry-button[hidden]{display:none}#diagnostics{display:block;font-size:11px;color:var(--muted);line-height:1.8;overflow-wrap:anywhere}.viewbar button,.top-button,.fcu-row button{min-height:44px}.fcu-row{grid-template-columns:38px 44px 1fr 44px}
+@media(max-width:760px){.topbar{gap:4px;padding:0 8px}.top-actions{gap:4px;min-width:0}.top-button{padding:6px;font-size:10px}.brand-mark{font-size:17px}.load-status{max-width:48vw;font-size:10px}.target-info{max-width:43vw;font-size:11px}.viewbar{scrollbar-width:thin}.viewbar button{padding:7px 11px}}
