@@ -1,0 +1,26 @@
+name: Source and license checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check JavaScript syntax and ground-system behavior
+        run: |
+          for file in src/*.mjs; do node --check "$file"; done
+          node --test tests/sim.test.mjs
+      - name: Check manual, attribution, and paired model source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s LICENSE
+          test -s docs/MANUAL.zh-TW.md
+          test -s docs/LICENSE-REVIEW.zh-TW.md
+          grep -q 'id="manualModal"' index.html
+          grep -q 'id="enterButton"' index.html
+          bash scripts/verify-assets.sh

@@ -1,0 +1,58 @@
+name: Import and verify GPL-2.0 A320 cockpit model
+on:
+  push:
+    branches:
+      - feature/a320-open-source-cockpit-zh-manual
+    paths:
+      - .github/workflows/import-a320-assets.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  import-model:
+    if: github.repository == 'waydefu/Airplane-cockpit' && github.ref == 'refs/heads/feature/a320-open-source-cockpit-zh-manual'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Fetch and validate pinned GPL-2.0 model and source
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://raw.githubusercontent.com/radebit/flight-simulator/b2afd173081aea5db00031baa1003aa7c46a789a/public/models/a320"
+          DEST="public/assets/a320"
+          mkdir -p "$DEST"
+          fetch_checked() {
+            local name="$1" expected="$2" actual
+            curl --fail --location --retry 4 --connect-timeout 25 \
+              "$BASE/$name" --output "$DEST/$name"
+            actual="$(git hash-object "$DEST/$name")"
+            if [[ "$actual" != "$expected" ]]; then
+              echo "::error::Digest mismatch for $name; expected $expected, got $actual"
+              exit 1
+            fi
+            echo "verified $name $actual"
+          }
+          fetch_checked "cockpit.glb" "b9f584c21f00fba72e31aeb08a2a521fd44c14a7"
+          fetch_checked "cockpit-manifest.json" "e6aad61c33116bb8e8bbfac11e7b03fff5c4c2d3"
+          fetch_checked "flightgear-source.tar.gz" "d327b3b21c7d6ccbe7f50bf3fcf292f1d897260a"
+          fetch_checked "LICENSE.txt" "23cb790338e191e29205d6f4123882c0583ef8eb"
+          fetch_checked "NOTICE.txt" "65aadd6656f1c8ccd5c9e8b47035c768db5ce9ad"
+          tar -tzf "$DEST/flightgear-source.tar.gz" >/dev/null
+          test -s "$DEST/cockpit.glb"
+          test -s "$DEST/flightgear-source.tar.gz"
+      - name: Commit verified assets only to the feature branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/assets/a320
+          if git diff --cached --quiet; then
+            echo "Assets already at the pinned revision."
+            exit 0
+          fi
+          git commit -m "assets: import verified GPL-2.0 A320 cockpit with complete source"
+          git push origin "HEAD:refs/heads/$GITHUB_REF_NAME"

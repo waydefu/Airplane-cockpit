@@ -1,0 +1,40 @@
+name: Publish A320 cockpit website
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate application
+        run: |
+          for file in src/*.mjs; do node --check "$file"; done
+          bash scripts/verify-assets.sh
+          node --test tests/sim.test.mjs
+          test -s public/assets/a320/cockpit.glb
+          test -s public/assets/a320/flightgear-source.tar.gz
+          test -s public/assets/a320/LICENSE.txt
+          test -s public/assets/a320/NOTICE.txt
+      - name: Prepare distributable website including corresponding source
+        run: |
+          mkdir -p _site
+          cp index.html styles.css LICENSE _site/
+          cp -r src docs public _site/
+          test -s _site/public/assets/a320/flightgear-source.tar.gz
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - uses: actions/deploy-pages@v4
